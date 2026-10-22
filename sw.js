@@ -1,0 +1,18 @@
+const CACHE = 'trenirovki-pwa-v1-20261021';
+const FILES = ['./','./index.html','./styles.css','./app.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-180.png'];
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim()));
+});
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET' || new URL(e.request.url).origin !== self.location.origin) return;
+  e.respondWith(caches.match(e.request).then(hit => hit || fetch(e.request).then(resp => {
+    if (resp.ok && resp.type === 'basic') {
+      const copy = resp.clone();
+      caches.open(CACHE).then(cache => cache.put(e.request, copy));
+    }
+    return resp;
+  })));
+});
